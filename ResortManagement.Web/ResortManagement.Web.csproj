@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ResortManagement.Application\ResortManagement.Application.csproj" />
     <ProjectReference Include="..\ResortManagement.Infrastructure\ResortManagement.Infrastructure.csproj" />
   </ItemGroup>
 
