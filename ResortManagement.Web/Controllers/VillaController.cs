@@ -7,15 +7,16 @@ namespace ResortManagement.Web.Controllers
 {
     public class VillaController : Controller
     {
-        private readonly  IVillaRepository _villaRepo;
-
-        public VillaController(IVillaRepository villaRepo)
+        private readonly  IUnitOfWork _unitOfWork;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+        public VillaController(IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
         {
-            _villaRepo = villaRepo;
+            _unitOfWork = unitOfWork;
+            _webHostEnvironment = webHostEnvironment;
         }
         public IActionResult Index()
         {
-            var villas = _villaRepo.GetAll();
+            var villas = _unitOfWork.Villa.GetAll();
             return View(villas);
         }
 
@@ -34,8 +35,34 @@ namespace ResortManagement.Web.Controllers
 
             if(ModelState.IsValid)
             {
-                _villaRepo.Add(obj);
-                _villaRepo.Save();
+                if(obj.Image != null)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                    var extension = Path.GetExtension(obj.Image.FileName).ToLower();
+
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ModelState.AddModelError("Image", "Only .jpg and .png files are allowed.");
+                        return View(obj); 
+                    }
+                    
+                    string fileName = Guid.NewGuid().ToString()+ Path.GetExtension(obj.Image.FileName);
+       
+                    string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\Villa Image");
+
+                    using var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create);               
+                    obj.Image.CopyTo(fileStream);
+                   
+                    obj.ImageUrl = @"\images\Villa Image\" + fileName;
+
+                }
+                else
+                {
+                    obj.ImageUrl = "https://placehold.co/600x400";
+                }
+
+                _unitOfWork.Villa.Add(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been created successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -44,7 +71,7 @@ namespace ResortManagement.Web.Controllers
 
         public IActionResult Update(int villaId)
         {
-            Villa? obj = _villaRepo.Get(u=>u.Id==villaId);
+            Villa? obj = _unitOfWork.Villa.Get(u=>u.Id==villaId);
             //Villa? obj = _db.Villas.Find(villaId);
             // var villaList = _db.Villas.Where(u=>u.Price > 50 && u.Occupancy > 0);
             if (obj == null)
@@ -59,17 +86,49 @@ namespace ResortManagement.Web.Controllers
 
             if (ModelState.IsValid && obj.Id>0)
             {
-                _villaRepo.Update(obj);
-                _villaRepo.Save();
+                    if (obj.Image != null)
+                    {
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+                        var extension = Path.GetExtension(obj.Image.FileName).ToLower();
+
+                        if (!allowedExtensions.Contains(extension))
+                        {
+                            ModelState.AddModelError("Image", "Only .jpg and .png files are allowed.");
+                            return View(obj);
+                        }
+
+                        string fileName = Guid.NewGuid().ToString() + Path.GetExtension(obj.Image.FileName);
+                        string imagePath = Path.Combine(_webHostEnvironment.WebRootPath, @"images\Villa Image");
+
+                        if(!string.IsNullOrEmpty(obj.ImageUrl))
+                        {
+                            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, obj.ImageUrl.TrimStart('\\'));
+                       
+                            if(System.IO.File.Exists(oldImagePath))
+                            {
+                                System.IO.File.Delete(oldImagePath);
+                            }
+                        }
+
+                        using var fileStream = new FileStream(Path.Combine(imagePath, fileName), FileMode.Create);
+                        obj.Image.CopyTo(fileStream);
+
+                        obj.ImageUrl = @"\images\Villa Image\" + fileName;
+
+                    }
+
+                
+                    _unitOfWork.Villa.Update(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
-            return View(obj);
+            return View();
         }
 
         public IActionResult Delete(int villaId)
         {
-            Villa? obj = _villaRepo.Get(u => u.Id == villaId);
+            Villa? obj = _unitOfWork.Villa.Get(u => u.Id == villaId);
             if (obj == null)
                 return RedirectToAction("Error", "Home");
 
@@ -79,11 +138,11 @@ namespace ResortManagement.Web.Controllers
         [HttpPost]
         public IActionResult Delete(Villa obj)
         {
-            Villa? objFromDb = _villaRepo.Get(u => u.Id == obj.Id);
+            Villa? objFromDb = _unitOfWork.Villa.Get(u => u.Id == obj.Id);
             if (objFromDb is not null)
             {
-                _villaRepo.Remove(objFromDb);
-                _villaRepo.Save();
+                _unitOfWork.Villa.Remove(objFromDb);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been deleted successfully.";
                 return RedirectToAction(nameof(Index));
             }
