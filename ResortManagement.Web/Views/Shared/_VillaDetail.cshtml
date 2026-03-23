@@ -1,0 +1,57 @@
+﻿@model Villa
+
+ <div class="modal fade" id="villaModal-@Model.Id" tabindex="-1">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content rounded-4">
+
+                        <div class="modal-header">
+                <h5 class="modal-title">@Model.Name</h5>
+                            <button class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="row g-4">
+
+                                <div class="col-md-5">
+                        <img src="@Model.ImageUrl"
+                                         class="img-fluid rounded-3" />
+                                </div>
+
+                                <div class="col-md-7">
+
+                        <p>@Html.Raw(Model.Description)</p>
+
+                        @if (Model.VillaAmenity != null && Model.VillaAmenity.Any())
+                                    {
+                                        <h6 class="text-success">Amenities</h6>
+                                        <ul>
+                                @foreach (var amenity in Model.VillaAmenity)
+                                            {
+                                                <li>@amenity.Name</li>
+                                            }
+                                        </ul>
+                                    }
+
+                                    <hr />
+
+                                    <p class="fw-bold text-success fs-5">
+                            @Model.Price.ToString("c") / night
+                                    </p>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button class="btn btn-outline-danger" data-bs-dismiss="modal">
+                                Close
+                            </button>
+                            <button class="btn btn-success">
+                                Book Now
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div> 
